@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    #btn {
+      position: fixed;
+    }
+    #canvas {
+      width: 100%;
+      display: block;
+      background: linear-gradient(
+        135deg,
+        rgb(140, 130, 130) 0%,
+        rgb(230, 130, 110) 100%
+      )
+    }
+  </style>
+</head>
+<body>
+  <button id="btn" onClick="play()">CLICK</button>
+  <audio id="audio" src="./jay.mp3"></audio>
+  <canvas id="canvas"></canvas>
+  <script>
+    const oAudio = document.querySelector('#audio')
+
+    // 設定畫布
+    const cCtx = canvas.getContext('2d')
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+
+    // 配置 canvas 漸變參數
+    const oW = canvas.width
+    const oH = canvas.height
+    const color = cCtx.createLinearGradient(oW/2, oH/2-30, oW/2, oH/2-100) // 垂直漸變
+    color.addColorStop(0, '#000')
+    color.addColorStop(.5, '#069')
+    color.addColorStop(1, '#f6f')
+
+
+
+    function play() {
+
+      const analyser = getAnalyser()
+      const getFrequencyArray = getFrequencyData(analyser)
+
+      // 設定條數
+      const count = 80;
+      function draw() {
+        // 獲取信號全部數據
+        const frequencyArray = getFrequencyArray()
+
+        // 計算幾條數據畫一條，不可能 1024 比都畫出來
+        const step = Math.round(frequencyArray.length / count)
+
+        // 清畫布
+        cCtx.clearRect(0,0, oW, oH)
+
+        // 循環條數
+        for(let i = 0; i < count; i++) {
+
+          // 獲取每條數據
+          const audioData = frequencyArray[step * i]
+
+          // 著色
+          cCtx.fillStyle = color
+
+          // 寫位置(正中心開始畫, 從中心點往兩側畫數據)
+          // fillRect(x, y, w, h)
+          cCtx.fillRect(oW / 2 + (i * 10), oH/2, 7, -audioData)
+          cCtx.fillRect(oW / 2 - (i * 10), oH/2, 7, -audioData)
+
+        }
+        requestAnimationFrame(draw)
+      }
+
+      requestAnimationFrame(draw)
+      oAudio.play()
+    }
+
+    //function
+    function getAnalyser() {
+      const oCtx = new AudioContext()
+      const audioSrc = oCtx.createMediaElementSource(oAudio)
+      const analyser = oCtx.createAnalyser()
+      audioSrc.connect(analyser)
+      analyser.connect(oCtx.destination)
+      return analyser
+    }
+
+    function getFrequencyData(analyser) {
+      const frequencyArray = new Uint8Array(analyser.frequencyBinCount)
+      return function () {
+        analyser.getByteFrequencyData(frequencyArray)
+        return frequencyArray
+      }
+    }
+
+
+  </script>
+</body>
+</html>
